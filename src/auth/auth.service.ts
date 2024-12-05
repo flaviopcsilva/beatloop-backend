@@ -205,7 +205,7 @@ export class AuthService {
         return { message: 'Código reenviado com sucesso!' }
     }
 
-    async saveProfileChanges(id: string, email: string, name: string, profileImage: string) {
+    async saveProfileChanges(id: string, email: string, name: string, photo: string) {
         const user = await this.userRepository.findOne({ where: { id } });
 
         if (!user) {
@@ -218,7 +218,7 @@ export class AuthService {
             }
         }
 
-        if (!email && !name && !profileImage) {
+        if (!email && !name && !photo) {
             throw new BadRequestException('Nenhuma alteração foi feita');
         }
 
@@ -236,16 +236,9 @@ export class AuthService {
             user.name = name;
         }
 
-        if (profileImage) {
-            user.profileImage = profileImage;
+        if (photo) {
+            user.profileImage = photo;
         }
-
-        const changes = [];
-
-        if (email) changes.push('email');
-        if (name) changes.push('name');
-        if (profileImage) changes.push('profileImage');
-
 
         await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
             await transactionalEntityManager.save(user);
