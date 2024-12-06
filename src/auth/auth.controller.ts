@@ -45,8 +45,8 @@ export class AuthController {
   }
 
   @Post('update')
-  async updateProfile(@Body('id') id: string, @Body('email') email: string, @Body('name') name: string, @Body('photo') photo: string) {
-    return this.authService.saveProfileChanges(id, email, name, photo);
+  async updateProfile(@Body('id') id: string, @Body('email') email: string, @Body('name') name: string, @Body('photo') photo: string, @Body('banner') bannerPhoto: string) {
+    return this.authService.saveProfileChanges(id, email, name, photo, bannerPhoto);
   }
 
 }

@@ -163,7 +163,7 @@ export class AuthService {
         return { accessToken };
     }
 
-    async verifyCode(email: string, code: string): Promise<UserEntity> {
+    async verifyCode(email: string, code: string): Promise<{ accessToken: string }> {
         const user = await this.userRepository.findOne({ where: { email } });
         if (!user) {
             throw new BadRequestException('User not found');
@@ -184,7 +184,13 @@ export class AuthService {
         user.isVerified = true;
         user.verificationCode = null;
         user.verificationCodeExpiry = null;
-        return this.userRepository.save(user);
+
+        await this.userRepository.save(user);
+
+        const payload = this.creatPayload(user);
+        const accessToken = this.jwtService.sign(payload);
+
+        return { accessToken };
     }
 
     async reenviarCode(email: string) {
@@ -205,7 +211,7 @@ export class AuthService {
         return { message: 'Código reenviado com sucesso!' }
     }
 
-    async saveProfileChanges(id: string, email: string, name: string, photo: string) {
+    async saveProfileChanges(id: string, email: string, name: string, photo: string, bannerPhoto: string) {
         const user = await this.userRepository.findOne({ where: { id } });
 
         if (!user) {
@@ -218,7 +224,7 @@ export class AuthService {
             }
         }
 
-        if (!email && !name && !photo) {
+        if (!email && !name && !photo && !bannerPhoto) {
             throw new BadRequestException('Nenhuma alteração foi feita');
         }
 
@@ -226,7 +232,13 @@ export class AuthService {
             if (!this.isValidEmail(email)) {
                 throw new BadRequestException('Email inválido');
             }
+            const verificationCode = randomInt(100000, 999999).toString();
+            const verificationCodeExpiry = new Date(Date.now() + 3 * 60 * 1000); // 15 minutos para expirar
             user.email = email;
+            user.isVerified = false;
+            user.verificationCode = verificationCode;
+            user.verificationCodeExpiry = verificationCodeExpiry;
+            await EmailService(email, verificationCode);
         }
 
         if (name) {
@@ -238,6 +250,10 @@ export class AuthService {
 
         if (photo) {
             user.profileImage = photo;
+        }
+
+        if (bannerPhoto) {
+            user.profileBanner = bannerPhoto
         }
 
         await this.userRepository.manager.transaction(async (transactionalEntityManager) => {
